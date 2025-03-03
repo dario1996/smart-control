@@ -1,0 +1,39 @@
+#==========================================================
+#= GestUser Web Service - Versione Base
+#==========================================================
+
+server:
+  port: 8019
+spring:
+  application:
+    name: GestUser
+#==========================================================
+#= PARAMETRI DB MONGODB 
+#==========================================================
+  #data:
+    #mongodb:
+      #authentication-database: admin
+      #database: ms-users
+      #host: localhost
+      #password: 123Stella
+      #port: 27017
+      #username: dario
+      #auto-index-creation: true
+#==========================================================
+#= PARAMETRI DBMS POSTGRESQL 
+#==========================================================
+  sql:
+    init:
+      mode: always
+      platform: postgres
+  datasource:
+    password: 123_Stella
+    url: jdbc:postgresql://localhost:5433/smartcontrol
+    username: postgres
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
