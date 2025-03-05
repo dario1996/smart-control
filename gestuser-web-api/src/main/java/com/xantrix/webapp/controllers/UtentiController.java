@@ -2,7 +2,9 @@ package com.xantrix.webapp.controllers;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -134,6 +136,61 @@ public class UtentiController
 	        HttpStatus.CREATED
 	    );
 	}
+	
+	// ------------------- REGISTRAZIONE UTENTE ------------------------------------
+	@PostMapping(value = "/register", produces = "application/json")
+	@SneakyThrows
+	public ResponseEntity<InfoMsg> registerUser(@Valid @RequestBody Utenti utente, 
+	    BindingResult bindingResult) {
+
+	    if (bindingResult.hasErrors()) {
+	        String MsgErr = errMessage.getMessage(bindingResult.getFieldError(), LocaleContextHolder.getLocale());
+	        log.warning(MsgErr);
+	        throw new BindingException(MsgErr);
+	    }
+
+	    // Controlla se l'username è già in uso
+	    if (utentiService.CheckExistUsername(utente.getUsername())) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                .body(new InfoMsg(LocalDate.now(), "Username già in uso!"));
+	    }
+
+	    log.info("Registrazione Nuovo Utente");
+
+	    // Codifica la password sempre
+	    utente.setPassword(passwordEncoder.encode(utente.getPassword()));
+
+	 // Gestione lista ruoli (da List<String> a array per PostgreSQL)
+	    if (utente.getRuoli() == null || utente.getRuoli().isEmpty()) 
+	    {
+	        utente.setRuoli(Collections.singletonList("USER")); // Imposta 'USER' se non ci sono ruoli
+	    } else {
+	        utente.setRuoli(Arrays.asList(utente.getRuoli().toArray(new String[0])));
+	    }
+
+
+	    // Associa i negozi all'utente e genera shopId
+	    if (utente.getNegozi() != null) 
+	    {
+	        utente.getNegozi().forEach(negozio -> {
+	            if (negozio.getShopId() == null || negozio.getShopId().isEmpty()) {
+	                negozio.setShopId(generateShopId(negozio.getShopName()));
+	            }
+	            negozio.setUtente(utente);
+	        });
+	    }
+
+
+	    // Salva il nuovo utente
+	    utentiService.Save(utente);
+
+	    return new ResponseEntity<>(
+	        new InfoMsg(LocalDate.now(), 
+	        String.format("Registrazione utente %s eseguita con successo!", utente.getUsername())),
+	        HttpStatus.CREATED
+	    );
+	}
+
 
 
 	// ------------------- ELIMINAZIONE UTENTE ------------------------------------
@@ -168,4 +225,16 @@ public class UtentiController
 
 		return new ResponseEntity<>(responseNode, headers, HttpStatus.OK);
 	}
+	
+	private String generateShopId(String shopName) 
+	{
+	    // Prendi le prime 3 lettere del nome in maiuscolo
+	    String prefix = shopName.length() >= 3 ? shopName.substring(0, 3).toUpperCase() : shopName.toUpperCase();
+
+	    // Genera un UUID e prendi solo i primi 8 caratteri, convertiti in maiuscolo
+	    String uniquePart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+	    return "SHOP" + prefix + uniquePart;
+	}
+
 }
