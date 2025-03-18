@@ -16,4 +16,6 @@ public interface UtentiService
 	
 	public boolean CheckExistUsername(String Username);
 	
+	public Utenti SelUserByUsernameAndPassword(String Username, String Email);
+	
 }

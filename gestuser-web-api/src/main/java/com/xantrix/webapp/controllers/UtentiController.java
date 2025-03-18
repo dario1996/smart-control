@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,7 +29,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xantrix.webapp.exception.BindingException;
 import com.xantrix.webapp.exception.NotFoundException;
+import com.xantrix.webapp.models.PasswordResetRequest;
 import com.xantrix.webapp.models.Utenti;
+import com.xantrix.webapp.services.EmailService;
 import com.xantrix.webapp.services.UtentiService;
 
 import jakarta.validation.Valid;
@@ -42,6 +45,12 @@ public class UtentiController
 {
 	@Autowired
 	UtentiService utentiService;
+	
+	@Autowired
+	EmailService emailService;
+	
+	@Autowired
+	JavaMailSender mailSender;
 	
 	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
@@ -191,8 +200,6 @@ public class UtentiController
 	    );
 	}
 
-
-
 	// ------------------- ELIMINAZIONE UTENTE ------------------------------------
 	@DeleteMapping(value = "/elimina/{id}")
 	@SneakyThrows
@@ -225,6 +232,24 @@ public class UtentiController
 
 		return new ResponseEntity<>(responseNode, headers, HttpStatus.OK);
 	}
+	
+	@PostMapping("/reset-password-request")
+	@SneakyThrows
+    public ResponseEntity<InfoMsg> requestReset(@RequestBody @Valid PasswordResetRequest request) 
+	{
+		Utenti utente = utentiService.SelUserByUsernameAndPassword(request.getUsername(), request.getEmail());
+		String token = UUID.randomUUID().toString();
+		String resetLink = "http://localhost:4200/reset-password?token=" + token;
+		emailService.sendEmail(utente.getEmail(), "Reset Password", 
+                "<p>Hai richiesto di reimpostare la password.</p>"
+                + "<p><a href='" + resetLink + "'>Clicca qui per resettare la password</a></p>");
+        //return ResponseEntity.ok("Email di reset inviata!");
+        return new ResponseEntity<>(
+    	        new InfoMsg(LocalDate.now(), 
+    	        String.format("Email di reset inviata!", utente.getUsername())),
+    	        HttpStatus.OK
+    	    );
+    }
 	
 	private String generateShopId(String shopName) 
 	{

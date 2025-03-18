@@ -48,4 +48,10 @@ public class UtentiServiceImpl implements UtentiService
 		return utentiRepository.existsByUsername(Username);
 	}
 
+	@Override
+	public Utenti SelUserByUsernameAndPassword(String Username, String Email) 
+	{
+		return utentiRepository.findByUsernameAndEmail(Username, Email);
+	}
+
 }
